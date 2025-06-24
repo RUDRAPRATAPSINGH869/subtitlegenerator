@@ -1,0 +1,9 @@
+flask
+flask_cors
+whisper
+torch
+deep-translator
+opencv-python
+srt
+numpy
+pillow

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtitle Generator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Subtitle Generator</h1>
+
+        <input type="file" id="fileInput" accept=".mp4,.mp3,.wav,.m4a" />
+        
+        <label>Spoken Language:</label>
+        <select id="spokenLang">
+            <option value="Auto">Auto Detect</option>
+        </select>
+
+        <label>Subtitle Language:</label>
+        <select id="targetLang"></select>
+
+        <button onclick="uploadFile()">Generate Subtitles</button>
+
+        <div class="progress-container">
+            <progress id="progressBar" value="0" max="100" style="width: 100%; margin-top: 20px;"></progress>
+            <div id="downloads" style="margin-top: 20px;"></div>
+
+        </div>
+
+        <div id="result">
+            <h3>Transcribed Text</h3>
+            <textarea id="transcribedText" rows="10" readonly></textarea>
+
+            <h3>Translated Subtitles</h3>
+            <textarea id="translatedText" rows="10" readonly></textarea>
+
+            <div id="downloadLinks"></div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
