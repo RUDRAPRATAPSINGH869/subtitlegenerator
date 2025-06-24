@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    margin: 40px;
+    padding: 20px;
 }
 
 .container {
@@ -8,34 +8,17 @@ body {
     margin: auto;
 }
 
-input, select, button, textarea {
-    display: block;
-    width: 100%;
-    margin-bottom: 15px;
-    padding: 10px;
-}
-
-button {
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-.progress-container {
+#progressContainer {
     width: 100%;
     background-color: #ddd;
-    margin-bottom: 20px;
+    margin: 15px 0;
 }
 
-.progress-bar {
+#progressBar {
     width: 0%;
     height: 20px;
     background-color: #4CAF50;
     text-align: center;
+    line-height: 20px;
     color: white;
 }

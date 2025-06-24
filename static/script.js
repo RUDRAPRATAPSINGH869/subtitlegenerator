@@ -1,76 +1,80 @@
-document.addEventListener('DOMContentLoaded', function () {
-    loadLanguages();
-});
-
-function loadLanguages() {
-    fetch('/languages')
+document.addEventListener("DOMContentLoaded", function() {
+    fetch("/languages")
         .then(response => response.json())
         .then(languages => {
-            const spokenLangSelect = document.getElementById('spokenLang');
-            const targetLangSelect = document.getElementById('targetLang');
+            const spokenLangSelect = document.getElementById("spokenLang");
+            const targetLangSelect = document.getElementById("targetLang");
 
             languages.forEach(lang => {
-                const option1 = document.createElement('option');
+                let option1 = document.createElement("option");
                 option1.value = lang;
-                option1.textContent = lang;
+                option1.text = lang;
                 spokenLangSelect.appendChild(option1);
 
-                const option2 = document.createElement('option');
+                let option2 = document.createElement("option");
                 option2.value = lang;
-                option2.textContent = lang;
+                option2.text = lang;
                 targetLangSelect.appendChild(option2);
             });
         });
+});
+
+function updateProgress(percent) {
+    document.getElementById("progressBar").style.width = percent + "%";
+    document.getElementById("progressBar").innerText = percent + "%";
+}
+
+function resetProgress() {
+    document.getElementById("progressBar").style.width = "0%";
+    document.getElementById("progressBar").innerText = "";
 }
 
 function uploadFile() {
-    const fileInput = document.getElementById('fileInput');
-    const spokenLang = document.getElementById('spokenLang').value;
-    const targetLang = document.getElementById('targetLang').value;
+    resetProgress();
 
-    if (fileInput.files.length === 0) {
-        alert('Please select a file.');
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) {
+        alert("Please select a file.");
         return;
     }
 
+    const spokenLang = document.getElementById("spokenLang").value;
+    const targetLang = document.getElementById("targetLang").value;
+
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('spoken_lang', spokenLang);
-    formData.append('target_lang', targetLang);
+    formData.append("file", file);
+    formData.append("spoken_lang", spokenLang);
+    formData.append("target_lang", targetLang);
 
-    const progressBar = document.getElementById('progressBar');
-    progressBar.value = 0;
+    updateProgress(20);
 
-    let progress = 0;
-    let interval = setInterval(() => {
-        if (progress >= 95) {
-            progress = 0; // Restart the progress bar to loop
-        }
-        progress += 5;
-        progressBar.value = progress;
-    }, 300);
-
-    fetch('/transcribe', {
-        method: 'POST',
+    fetch("/transcribe", {
+        method: "POST",
         body: formData
     })
-        .then(response => response.json())
-        .then(data => {
-            clearInterval(interval);
-            progressBar.value = 100;
+    .then(res => {
+        if (!res.ok) {
+            throw new Error("Failed to process the file.");
+        }
+        updateProgress(60);
+        return res.json();
+    })
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
 
-            document.getElementById('transcribedText').value = data.transcribed_text;
-            document.getElementById('translatedText').value = data.translated_text;
+        updateProgress(100);
 
-            // Provide download links
-            const downloads = document.getElementById('downloads');
-            downloads.innerHTML = `
-                <a href="/download/${data.srt_file}" download>Download SRT File</a><br>
-                <a href="/download/${data.video_file}" download>Download Video with Subtitles</a>
-            `;
-        })
-        .catch(error => {
-            clearInterval(interval);
-            alert('An error occurred: ' + error.message);
-        });
+        document.getElementById("transcribedText").value = data.transcribed_text;
+        document.getElementById("translatedText").value = data.translated_text;
+
+        document.getElementById("srtDownload").href = `/download/${data.srt_file}`;
+        document.getElementById("videoDownload").href = `/download/${data.video_file}`;
+        document.getElementById("downloadSection").style.display = "block";
+    })
+    .catch(err => {
+        alert("An error occurred: " + err.message);
+        resetProgress();
+    });
 }

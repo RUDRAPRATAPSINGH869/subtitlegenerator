@@ -11,7 +11,7 @@
         <h1>Subtitle Generator</h1>
 
         <input type="file" id="fileInput" accept=".mp4,.mp3,.wav,.m4a" />
-        
+
         <label>Spoken Language:</label>
         <select id="spokenLang">
             <option value="Auto">Auto Detect</option>
@@ -22,10 +22,8 @@
 
         <button onclick="uploadFile()">Generate Subtitles</button>
 
-        <div class="progress-container">
-            <progress id="progressBar" value="0" max="100" style="width: 100%; margin-top: 20px;"></progress>
-            <div id="downloads" style="margin-top: 20px;"></div>
-
+        <div id="progressContainer">
+            <div id="progressBar"></div>
         </div>
 
         <div id="result">
@@ -35,7 +33,10 @@
             <h3>Translated Subtitles</h3>
             <textarea id="translatedText" rows="10" readonly></textarea>
 
-            <div id="downloadLinks"></div>
+            <div id="downloadSection" style="display:none;">
+                <a id="srtDownload" download>Download Subtitle (.srt)</a><br>
+                <a id="videoDownload" download>Download Subtitled Video</a>
+            </div>
         </div>
     </div>
 
