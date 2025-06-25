@@ -7,3 +7,4 @@ opencv-python
 srt
 numpy
 pillow
+gunicorn
