@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     fetch("/languages")
         .then(response => response.json())
         .then(languages => {
@@ -52,29 +52,35 @@ function uploadFile() {
         method: "POST",
         body: formData
     })
-    .then(res => {
-        if (!res.ok) {
-            throw new Error("Failed to process the file.");
-        }
-        updateProgress(60);
-        return res.json();
-    })
-    .then(data => {
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("Failed to process the file.");
+            }
+            updateProgress(60);
+            return res.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
 
-        updateProgress(100);
+            updateProgress(100);
 
-        document.getElementById("transcribedText").value = data.transcribed_text;
-        document.getElementById("translatedText").value = data.translated_text;
+            document.getElementById("transcribedText").value = data.transcribed_text;
+            document.getElementById("translatedText").value = data.translated_text;
 
-        document.getElementById("srtDownload").href = `/download/${data.srt_file}`;
-        document.getElementById("videoDownload").href = `/download/${data.video_file}`;
-        document.getElementById("downloadSection").style.display = "block";
-    })
-    .catch(err => {
-        alert("An error occurred: " + err.message);
-        resetProgress();
-    });
+            document.getElementById("srtDownload").href = `/download/${data.srt_file}`;
+            document.getElementById("videoDownload").href = `/download/${data.video_file}`;
+            document.getElementById("downloadSection").style.display = "block";
+        })
+        .catch(err => {
+            alert("An error occurred: " + err.message);
+            resetProgress();
+        });
+
+    
+
 }
+
+
+
