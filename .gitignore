@@ -1,5 +1,3 @@
-output/
-*.pyc
-__pycache__/
-*.log
-.env
+[submodule "subtitle"]
+    path = subtitle
+    url = https://github.com/username/subtitle-repo.git
