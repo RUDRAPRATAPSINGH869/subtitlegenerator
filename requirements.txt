@@ -1,7 +1,7 @@
 flask
 flask_cors
-openai-whisper
-torch
+openai-whisper==20231117
+torch==2.0.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 deep-translator
 opencv-python
 srt
