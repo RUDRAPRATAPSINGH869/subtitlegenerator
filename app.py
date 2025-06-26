@@ -1,80 +1,66 @@
 import streamlit as st
-import os
-from subtitle_generator import process_video, LANG_DICT
+from subtitlegenerator import process_video, LANG_DICT
 
-os.makedirs("uploads", exist_ok=True)
-
-st.title("🎬 Whisper Subtitle Translator (Cloud-Compatible Version)")
-
-# Initialize session state
-if 'uploaded_file' not in st.session_state:
-    st.session_state.uploaded_file = None
+# Initialize session state variables
+if 'progress' not in st.session_state:
+    st.session_state.progress = 0
 if 'result' not in st.session_state:
     st.session_state.result = None
 if 'processing' not in st.session_state:
     st.session_state.processing = False
-if 'progress' not in st.session_state:
-    st.session_state.progress = 0
 
-# File uploader
-uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov"])
+st.title("🎬 Whisper Subtitle Translator\n(Cloud-Compatible Version)")
 
-# Language selector
-target_lang = st.selectbox("Select Subtitle Output Language", list(LANG_DICT.keys()))
+uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov", "mpeg4"])
 
-# Save uploaded file to session state
-if uploaded_file is not None:
-    st.session_state.uploaded_file = uploaded_file
-    st.session_state.result = None
-    st.session_state.progress = 0
+language = st.selectbox("Select Subtitle Output Language", list(LANG_DICT.keys()))
 
-progress_bar = st.progress(st.session_state.progress)
-
-def update_progress(val):
-    st.session_state.progress = val
-    st.rerun()  # Force re-render to update the progress bar
-
-def process():
-    st.session_state.processing = True
-    file = st.session_state.uploaded_file
-    if file is None:
-        st.error("No file uploaded!")
+if uploaded_file:
+    # Reset session state when a new file is uploaded
+    if 'last_uploaded_file' not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
+        st.session_state.progress = 0
+        st.session_state.result = None
         st.session_state.processing = False
-        return
+        st.session_state.last_uploaded_file = uploaded_file.name
 
-    temp_video_path = os.path.join("uploads", file.name)
-    with open(temp_video_path, "wb") as f:
-        f.write(file.getbuffer())
-
-    result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
-
-    if result is not None:
-        st.session_state.result = result
-    else:
-        st.error("Processing failed. Please try again.")
-
-    st.session_state.processing = False
-    st.session_state.progress = 100
-    st.rerun()  # Force rerun to refresh UI
-
-if st.session_state.uploaded_file is not None:
     if st.button("Generate Subtitles"):
-        process()
+        st.session_state.processing = True
 
-if st.session_state.result:
-    result = st.session_state.result
-    st.success(f"✅ Subtitled video generated successfully!\nDetected Language: {result['detected_language']}")
+        def update_progress(value):
+            st.session_state.progress = value
+            st.rerun()
 
-    with open(result["output_video"], "rb") as f:
-        st.download_button("⬇️ Download Video with Subtitles", f, file_name=os.path.basename(result["output_video"]))
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+            temp_video.write(uploaded_file.read())
+            temp_video_path = temp_video.name
 
-    with open(result["subtitle_file"], "rb") as f:
-        st.download_button("⬇️ Download Subtitle File (.srt)", f, file_name=os.path.basename(result["subtitle_file"]))
+        st.session_state.result = process_video(temp_video_path, LANG_DICT[language], update_progress)
+        st.session_state.processing = False
+        st.rerun()
 
-    with open(result["summary_file"], "rb") as f:
-        st.download_button("⬇️ Download Full Transcript", f, file_name=os.path.basename(result["summary_file"]))
-elif st.session_state.processing:
-    st.info("Processing video, please wait...")
+# Show progress bar
+if st.session_state.processing:
     st.progress(st.session_state.progress)
-elif st.session_state.uploaded_file:
-    st.info("Ready to process. Click the button to start.")
+    st.info("Processing video, please wait...")
+
+# Show download buttons
+if st.session_state.result:
+    st.success("Processing completed!")
+
+    with open(st.session_state.result["output_video"], "rb") as file:
+        st.download_button(label="Download Video with Subtitles",
+                           data=file,
+                           file_name="output_with_subtitles.mp4",
+                           mime="video/mp4")
+
+    with open(st.session_state.result["subtitle_file"], "rb") as file:
+        st.download_button(label="Download Subtitle File (SRT)",
+                           data=file,
+                           file_name="subtitles.srt",
+                           mime="text/plain")
+
+    with open(st.session_state.result["summary_file"], "rb") as file:
+        st.download_button(label="Download Transcript",
+                           data=file,
+                           file_name="transcript.txt",
+                           mime="text/plain")
