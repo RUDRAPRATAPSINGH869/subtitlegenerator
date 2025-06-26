@@ -64,7 +64,7 @@ def extract_audio(video_path):
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return audio_path
 
-def transcribe_audio(audio_path, model_size="medium"):
+def transcribe_audio(audio_path, model_size="tiny"):
     model = whisper.load_model(model_size)
     result = model.transcribe(audio_path, task="transcribe")
     detected_lang = result.get("language", "unknown")
