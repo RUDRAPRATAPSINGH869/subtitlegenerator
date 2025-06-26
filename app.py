@@ -1,5 +1,5 @@
 import streamlit as st
-from subtitlegenerator import process_video, LANG_DICT
+from subtitle_generator import process_video, LANG_DICT
 
 # Initialize session state variables
 if 'progress' not in st.session_state:
