@@ -7,13 +7,15 @@ os.makedirs("uploads", exist_ok=True)
 
 st.title("🎬 Whisper Subtitle Translator (Cloud-Compatible Version)")
 
-# Initialize session state variables
+# Initialize session state
 if 'uploaded_file' not in st.session_state:
     st.session_state.uploaded_file = None
 if 'result' not in st.session_state:
     st.session_state.result = None
 if 'processing' not in st.session_state:
     st.session_state.processing = False
+if 'progress' not in st.session_state:
+    st.session_state.progress = 0
 
 # File uploader
 uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov"])
@@ -24,9 +26,15 @@ target_lang = st.selectbox("Select Subtitle Output Language", list(LANG_DICT.key
 # Save uploaded file to session state
 if uploaded_file is not None:
     st.session_state.uploaded_file = uploaded_file
-    st.session_state.result = None  # Reset previous result when new file is uploaded
+    st.session_state.result = None  # Reset previous result
+    st.session_state.progress = 0   # Reset progress
 
-# Process video function
+# Display progress bar (bind to session state)
+progress_bar = st.progress(st.session_state.progress)
+
+def update_progress(val):
+    st.session_state.progress = val
+
 def process():
     st.session_state.processing = True
 
@@ -41,10 +49,6 @@ def process():
         f.write(file.getbuffer())
 
     st.info("Processing video, please wait...")
-    progress_bar = st.progress(0)
-
-    def update_progress(val):
-        progress_bar.progress(val)
 
     result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
 
@@ -55,12 +59,10 @@ def process():
 
     st.session_state.processing = False
 
-# Button to trigger processing
 if st.session_state.uploaded_file is not None:
     if st.button("Generate Subtitles"):
         process()
 
-# Display download buttons if processing is done
 if st.session_state.result:
     result = st.session_state.result
     st.success(f"✅ Subtitled video generated successfully!\nDetected Language: {result['detected_language']}")
