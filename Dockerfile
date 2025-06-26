@@ -1,21 +1,21 @@
-# Use Python 3.9 image
-FROM python:3.9
+# Use Python 3.10 base image
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy all files
+# Install system dependencies
+RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6
+
+# Copy all project files
 COPY . .
 
-# Install dependencies
+# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Install ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg
+# Expose port (required by Render)
+EXPOSE 8000
 
-# Expose port for Streamlit
-EXPOSE 8501
-
-# Run Streamlit app
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Start the Streamlit app
+CMD ["streamlit", "run", "app.py", "--server.port=8000", "--server.address=0.0.0.0"]
