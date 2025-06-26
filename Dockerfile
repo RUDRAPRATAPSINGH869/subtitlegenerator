@@ -1,5 +1,4 @@
 # Use Python 3.10 base image
-
 FROM python:3.10-slim
 
 # Set working directory
@@ -14,7 +13,7 @@ RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6
 COPY . .
 
 # Install Python dependencies
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools<81
 RUN pip install -r requirements.txt
 
 # Expose port (required by Render)
