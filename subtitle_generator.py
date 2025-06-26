@@ -107,31 +107,44 @@ def burn_subtitles_ffmpeg(video_path, srt_path, output_path):
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def process_video(video_path, target_lang_code, progress_callback=None):
+def process_video(video_path, target_lang_code, progress_callback):
     try:
         base_name = os.path.splitext(video_path)[0]
-        if progress_callback: progress_callback(5)
+        progress_callback(5)
+
         audio_path = extract_audio(video_path)
-        if progress_callback: progress_callback(20)
-        segments, full_text, detected_lang = transcribe_audio(audio_path)
-        if progress_callback: progress_callback(50)
+        progress_callback(20)
+
+        segments, full_text, detected_lang = transcribe_audio(audio_path, model_size="tiny")
+        progress_callback(50)
+
         translated_segments = translate_segments(segments, target_lang_code)
-        if progress_callback: progress_callback(70)
+        progress_callback(70)
+
         srt_path = base_name + ".srt"
         export_srt(translated_segments, srt_path)
-        if progress_callback: progress_callback(80)
+
+        progress_callback(80)
+
+        sample_text = translated_segments[0]['text'] if translated_segments else ''
+        font_path = get_font_for_text(sample_text)
+
         final_output = base_name + "_with_subs.mp4"
-        burn_subtitles_ffmpeg(video_path, srt_path, final_output)
-        if progress_callback: progress_callback(100)
+        render_subtitles_on_video(video_path, translated_segments, final_output, font_path)
+
+        progress_callback(100)
+
         summary_path = base_name + "_summary.txt"
         with open(summary_path, "w", encoding="utf-8") as f:
             f.write(full_text)
+
         return {
-    "output_video": os.path.abspath(final_output),
-    "subtitle_file": os.path.abspath(srt_path),
-    "summary_file": os.path.abspath(summary_path),
-    "detected_language": detected_lang
-     }
+            "output_video": os.path.abspath(final_output),
+            "subtitle_file": os.path.abspath(srt_path),
+            "summary_file": os.path.abspath(summary_path),
+            "detected_language": detected_lang
+        }
 
     except Exception as e:
-        raise RuntimeError(f"Processing failed: {e}")
+        print(f"Processing failed: {e}")  # This will appear in Streamlit Cloud logs
+        return None
