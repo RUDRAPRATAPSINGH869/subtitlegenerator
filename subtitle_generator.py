@@ -3,8 +3,7 @@ import tempfile
 import subprocess
 import threading
 
-from tkinter import filedialog, messagebox
-from tkinter import ttk
+
 import whisper
 import srt
 from datetime import timedelta
