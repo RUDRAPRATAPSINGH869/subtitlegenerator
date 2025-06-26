@@ -2,7 +2,6 @@ import streamlit as st
 import os
 from subtitle_generator import process_video, LANG_DICT
 
-# Ensure upload directory exists
 os.makedirs("uploads", exist_ok=True)
 
 st.title("🎬 Whisper Subtitle Translator (Cloud-Compatible Version)")
@@ -26,18 +25,17 @@ target_lang = st.selectbox("Select Subtitle Output Language", list(LANG_DICT.key
 # Save uploaded file to session state
 if uploaded_file is not None:
     st.session_state.uploaded_file = uploaded_file
-    st.session_state.result = None  # Reset previous result
-    st.session_state.progress = 0   # Reset progress
+    st.session_state.result = None
+    st.session_state.progress = 0
 
-# Display progress bar (bind to session state)
 progress_bar = st.progress(st.session_state.progress)
 
 def update_progress(val):
     st.session_state.progress = val
+    st.rerun()  # Force re-render to update the progress bar
 
 def process():
     st.session_state.processing = True
-
     file = st.session_state.uploaded_file
     if file is None:
         st.error("No file uploaded!")
@@ -48,8 +46,6 @@ def process():
     with open(temp_video_path, "wb") as f:
         f.write(file.getbuffer())
 
-    st.info("Processing video, please wait...")
-
     result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
 
     if result is not None:
@@ -58,6 +54,8 @@ def process():
         st.error("Processing failed. Please try again.")
 
     st.session_state.processing = False
+    st.session_state.progress = 100
+    st.rerun()  # Force rerun to refresh UI
 
 if st.session_state.uploaded_file is not None:
     if st.button("Generate Subtitles"):
@@ -76,6 +74,7 @@ if st.session_state.result:
     with open(result["summary_file"], "rb") as f:
         st.download_button("⬇️ Download Full Transcript", f, file_name=os.path.basename(result["summary_file"]))
 elif st.session_state.processing:
-    st.info("Processing in progress...")
+    st.info("Processing video, please wait...")
+    st.progress(st.session_state.progress)
 elif st.session_state.uploaded_file:
     st.info("Ready to process. Click the button to start.")
