@@ -4,59 +4,12 @@ import subprocess
 import whisper
 import srt
 from datetime import timedelta
-import textwrap
 import re
-from PIL import ImageFont
 from deep_translator import GoogleTranslator
 
+# Load supported languages
 SUPPORTED_LANGS = GoogleTranslator().get_supported_languages(as_dict=True)
 LANG_DICT = {name.title(): code for name, code in SUPPORTED_LANGS.items()}
-
-def get_font_for_text(text):
-    if re.search(r'[\u0600-\u06FF]', text):
-        return "fonts/NotoSansArabic-Regular.ttf"
-    elif re.search(r'[\u0590-\u05FF]', text):
-        return "fonts/NotoSansHebrew-Regular.ttf"
-    elif re.search(r'[\u3040-\u30FF\u31F0-\u31FF]', text):
-        return "fonts/NotoSansCJKjp-Regular.otf"
-    elif re.search(r'[\uAC00-\uD7AF]', text):
-        return "fonts/NotoSansCJKkr-Regular.otf"
-    elif re.search(r'[\u4E00-\u9FFF]', text):
-        return "fonts/NotoSansSC-Regular.ttf"
-    elif re.search(r'[\u0900-\u097F]', text):
-        return "fonts/NotoSansDevanagari-Regular.ttf"
-    elif re.search(r'[\u0980-\u09FF]', text):
-        return "fonts/NotoSansBengali-Regular.ttf"
-    elif re.search(r'[\u0A00-\u0A7F]', text):
-        return "fonts/NotoSansGurmukhi-Regular.ttf"
-    elif re.search(r'[\u0A80-\u0AFF]', text):
-        return "fonts/NotoSansGujarati-Regular.ttf"
-    elif re.search(r'[\u0B00-\u0B7F]', text):
-        return "fonts/NotoSansOriya-Regular.ttf"
-    elif re.search(r'[\u0B80-\u0BFF]', text):
-        return "fonts/NotoSansTamil-Regular.ttf"
-    elif re.search(r'[\u0C00-\u0C7F]', text):
-        return "fonts/NotoSansTelugu-Regular.ttf"
-    elif re.search(r'[\u0C80-\u0CFF]', text):
-        return "fonts/NotoSansKannada-Regular.ttf"
-    elif re.search(r'[\u0D00-\u0D7F]', text):
-        return "fonts/NotoSansMalayalam-Regular.ttf"
-    elif re.search(r'[\u0E00-\u0E7F]', text):
-        return "fonts/NotoSansThai-Regular.ttf"
-    elif re.search(r'[\u0E80-\u0EFF]', text):
-        return "fonts/NotoSansLao-Regular.ttf"
-    elif re.search(r'[\u1780-\u17FF]', text):
-        return "fonts/NotoSansKhmer-Regular.ttf"
-    elif re.search(r'[\u1000-\u109F]', text):
-        return "fonts/NotoSansMyanmar-Regular.ttf"
-    elif re.search(r'[\u1200-\u137F]', text):
-        return "fonts/NotoSansEthiopic-Regular.ttf"
-    elif re.search(r'[\u0530-\u058F]', text):
-        return "fonts/NotoSansArmenian-Regular.ttf"
-    elif re.search(r'[\u10A0-\u10FF]', text):
-        return "fonts/NotoSansGeorgian-Regular.ttf"
-    else:
-        return "fonts/NotoSans-Regular.ttf"
 
 def extract_audio(video_path):
     audio_path = tempfile.mktemp(suffix=".wav")
@@ -106,7 +59,6 @@ def burn_subtitles_ffmpeg(video_path, srt_path, output_path):
     ]
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-
 def process_video(video_path, target_lang_code, progress_callback):
     try:
         base_name = os.path.splitext(video_path)[0]
@@ -137,12 +89,8 @@ def process_video(video_path, target_lang_code, progress_callback):
         export_srt(translated_segments, srt_path)
         progress_callback(80)
 
-        sample_text = translated_segments[0]['text'] if translated_segments else ''
-        font_path = get_font_for_text(sample_text)
-
         final_output = base_name + "_with_subs.mp4"
-        render_subtitles_on_video(video_path, translated_segments, final_output, font_path)
-
+        burn_subtitles_ffmpeg(video_path, srt_path, final_output)
         progress_callback(100)
 
         summary_path = base_name + "_summary.txt"
