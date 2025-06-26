@@ -1,6 +1,6 @@
 flask
 flask_cors
-whisper
+openai-whisper
 torch
 deep-translator
 opencv-python
