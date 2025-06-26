@@ -116,14 +116,25 @@ def process_video(video_path, target_lang_code, progress_callback):
         progress_callback(20)
 
         segments, full_text, detected_lang = transcribe_audio(audio_path, model_size="tiny")
+        print(f"Segments detected: {len(segments)}")
+
+        if not segments:
+            print("No transcription segments detected.")
+            return None
+
         progress_callback(50)
 
         translated_segments = translate_segments(segments, target_lang_code)
+        print(f"Translated segments: {len(translated_segments)}")
+
+        if not translated_segments:
+            print("No translated segments produced.")
+            return None
+
         progress_callback(70)
 
         srt_path = base_name + ".srt"
         export_srt(translated_segments, srt_path)
-
         progress_callback(80)
 
         sample_text = translated_segments[0]['text'] if translated_segments else ''
@@ -138,6 +149,14 @@ def process_video(video_path, target_lang_code, progress_callback):
         with open(summary_path, "w", encoding="utf-8") as f:
             f.write(full_text)
 
+        print("Checking if output files exist:")
+        print(f"Video exists: {os.path.exists(final_output)}")
+        print(f"SRT exists: {os.path.exists(srt_path)}")
+        print(f"Summary exists: {os.path.exists(summary_path)}")
+
+        print("Processing completed successfully!")
+        print(f"Returning: video={final_output}, srt={srt_path}, summary={summary_path}")
+
         return {
             "output_video": os.path.abspath(final_output),
             "subtitle_file": os.path.abspath(srt_path),
@@ -146,5 +165,5 @@ def process_video(video_path, target_lang_code, progress_callback):
         }
 
     except Exception as e:
-        print(f"Processing failed: {e}")  # This will appear in Streamlit Cloud logs
+        print(f"Processing failed: {e}")
         return None
