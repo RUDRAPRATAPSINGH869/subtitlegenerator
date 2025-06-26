@@ -99,12 +99,13 @@ def burn_subtitles_ffmpeg(video_path, srt_path, output_path):
     command = [
         'ffmpeg',
         '-y',
-        '-i', video_path,
-        '-vf', f"subtitles={srt_path}",
+        '-i', os.path.abspath(video_path),
+        '-vf', f"subtitles={os.path.abspath(srt_path)}",
         '-c:a', 'copy',
-        output_path
+        os.path.abspath(output_path)
     ]
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 
 def process_video(video_path, target_lang_code, progress_callback=None):
     try:
@@ -126,10 +127,11 @@ def process_video(video_path, target_lang_code, progress_callback=None):
         with open(summary_path, "w", encoding="utf-8") as f:
             f.write(full_text)
         return {
-            "output_video": final_output,
-            "subtitle_file": srt_path,
-            "summary_file": summary_path,
-            "detected_language": detected_lang
-        }
+    "output_video": os.path.abspath(final_output),
+    "subtitle_file": os.path.abspath(srt_path),
+    "summary_file": os.path.abspath(summary_path),
+    "detected_language": detected_lang
+     }
+
     except Exception as e:
         raise RuntimeError(f"Processing failed: {e}")
