@@ -31,9 +31,9 @@ if uploaded_file and st.button("Generate Subtitles"):
         # Process the video
         result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
 
+    if result:
         st.success(f"✅ Subtitled video generated successfully!\nDetected Language: {result['detected_language']}")
 
-        # Download buttons
         with open(result["output_video"], "rb") as f:
             st.download_button("⬇️ Download Video with Subtitles", f, file_name=os.path.basename(result["output_video"]))
 
@@ -42,6 +42,5 @@ if uploaded_file and st.button("Generate Subtitles"):
 
         with open(result["summary_file"], "rb") as f:
             st.download_button("⬇️ Download Full Transcript", f, file_name=os.path.basename(result["summary_file"]))
-
-    except Exception as e:
-        st.error(f"❌ Processing failed: {e}")
+   else:
+       st.error("Processing failed. Please check the logs.")
