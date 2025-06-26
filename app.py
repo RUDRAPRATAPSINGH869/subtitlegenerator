@@ -1,122 +1,149 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session
-from flask_cors import CORS
+import streamlit as st
 import whisper
 from deep_translator import GoogleTranslator
 import tempfile
 import os
 from subtitle_generator import get_font_for_text, export_srt, render_subtitles_on_video
 
-app = Flask(__name__)
-app.secret_key = 'your_secret_key'
-CORS(app)
+# Initialize session state variables
+if 'users' not in st.session_state:
+    st.session_state.users = {}
 
-SUPPORTED_LANGS = GoogleTranslator().get_supported_languages(as_dict=True)
-LANG_DICT = {name.title(): code for name, code in SUPPORTED_LANGS.items()}
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+if 'username' not in st.session_state:
+    st.session_state.username = ""
+
+if 'page' not in st.session_state:
+    st.session_state.page = 'login'
+
+if 'SUPPORTED_LANGS' not in st.session_state:
+    SUPPORTED_LANGS = GoogleTranslator().get_supported_languages(as_dict=True)
+    st.session_state.LANG_DICT = {name.title(): code for name, code in SUPPORTED_LANGS.items()}
 
 os.makedirs('output', exist_ok=True)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-users = {}
-
-@app.route('/')
-def index():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    return render_template('index.html', username=session['username'])
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username in users and users[username] == password:
-            session['username'] = username
-            return redirect(url_for('index'))
-        else:
-            return render_template('login.html', error='Invalid username or password')
-    return render_template('login.html')
-
-@app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username in users:
-            return render_template('signup.html', error='Username already exists')
-        users[username] = password
-        return redirect(url_for('login'))
-    return render_template('signup.html')
+    st.title("📝 Sign Up")
+    username = st.text_input("Create Username")
+    password = st.text_input("Create Password", type="password")
 
-@app.route('/logout')
+    if st.button("Sign Up"):
+        if username in st.session_state.users:
+            st.error("Username already exists!")
+        else:
+            st.session_state.users[username] = password
+            st.success("Account created successfully! Please log in.")
+            st.session_state.page = 'login'
+            st.rerun()
+
+
+    if st.button("Go to Login"):
+        st.session_state.page = 'login'
+        st.rerun()
+
+
+def login():
+    st.title("🔐 Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username in st.session_state.users and st.session_state.users[username] == password:
+            st.session_state.authenticated = True
+            st.session_state.username = username
+            st.success("Logged in successfully!")
+            st.rerun()
+
+        else:
+            st.error("Invalid username or password")
+
+    if st.button("Go to Sign Up"):
+        st.session_state.page = 'signup'
+        st.rerun()
+
+
 def logout():
-    session.pop('username', None)
-    return redirect(url_for('login'))
+    st.session_state.authenticated = False
+    st.session_state.username = ""
+    st.session_state.page = 'login'
+    st.rerun()
 
-@app.route('/languages', methods=['GET'])
-def get_languages():
-    return jsonify(list(LANG_DICT.keys()))
 
-@app.route('/transcribe', methods=['POST'])
-def transcribe():
-    try:
-        file = request.files['file']
-        spoken_lang = request.form.get('spoken_lang', 'Auto')
-        target_lang = request.form.get('target_lang', 'English')
+def main_page():
+    st.title("🎬 Subtitle Generator")
 
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        file.save(temp_file.name)
+    st.write(f"Welcome, {st.session_state.username}!")
+    if st.button("Logout"):
+        logout()
 
-        model = whisper.load_model('tiny')
+    file = st.file_uploader("Upload Video or Audio", type=['mp4', 'mp3', 'wav', 'm4a'])
 
-        transcription = model.transcribe(temp_file.name, language=None if spoken_lang == 'Auto' else LANG_DICT[spoken_lang])
-        transcribed_text = transcription['text']
+    spoken_lang = st.selectbox("Spoken Language", ["Auto"] + list(st.session_state.LANG_DICT.keys()))
+    target_lang = st.selectbox("Subtitle Language", list(st.session_state.LANG_DICT.keys()))
 
-        try:
-            translated_text = GoogleTranslator(source='auto', target=LANG_DICT[target_lang]).translate(transcribed_text)
-        except Exception:
-            translated_text = '[Translation Failed]'
+    if st.button("Generate Subtitles"):
+        if file is not None:
+            with st.spinner("Processing..."):
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+                temp_file.write(file.read())
+                temp_file.close()
 
-        base_name = os.path.splitext(os.path.basename(temp_file.name))[0]
-        srt_filename = f"{base_name}.srt"
-        video_filename = f"{base_name}_subtitled.mp4"
+                model = whisper.load_model('tiny')
+                transcription = model.transcribe(temp_file.name, language=None if spoken_lang == 'Auto' else st.session_state.LANG_DICT[spoken_lang])
+                transcribed_text = transcription['text']
 
-        segments = transcription['segments']
-        translated_segments = []
-        for seg in segments:
-            text = seg['text']
-            try:
-                translated_text_segment = GoogleTranslator(source='auto', target=LANG_DICT[target_lang]).translate(text)
-            except Exception:
-                translated_text_segment = '[Translation Failed]'
-            translated_segments.append({
-                'start': seg['start'],
-                'end': seg['end'],
-                'text': translated_text_segment
-            })
+                try:
+                    translated_text = GoogleTranslator(source='auto', target=st.session_state.LANG_DICT[target_lang]).translate(transcribed_text)
+                except Exception:
+                    translated_text = '[Translation Failed]'
 
-        srt_path = os.path.join('output', srt_filename)
-        export_srt(translated_segments, srt_path)
+                base_name = os.path.splitext(os.path.basename(temp_file.name))[0]
+                srt_filename = f"{base_name}.srt"
+                video_filename = f"{base_name}_subtitled.mp4"
 
-        sample_text = translated_segments[0]['text'] if translated_segments else ''
-        font_path = get_font_for_text(sample_text)
+                segments = transcription['segments']
+                translated_segments = []
+                for seg in segments:
+                    text = seg['text']
+                    try:
+                        translated_text_segment = GoogleTranslator(source='auto', target=st.session_state.LANG_DICT[target_lang]).translate(text)
+                    except Exception:
+                        translated_text_segment = '[Translation Failed]'
+                    translated_segments.append({
+                        'start': seg['start'],
+                        'end': seg['end'],
+                        'text': translated_text_segment
+                    })
 
-        video_output_path = os.path.join('output', video_filename)
-        render_subtitles_on_video(temp_file.name, translated_segments, video_output_path, font_path)
+                srt_path = os.path.join('output', srt_filename)
+                export_srt(translated_segments, srt_path)
 
-        return jsonify({
-            'transcribed_text': transcribed_text,
-            'translated_text': translated_text,
-            'srt_file': srt_filename,
-            'video_file': video_filename
-        })
+                sample_text = translated_segments[0]['text'] if translated_segments else ''
+                font_path = get_font_for_text(sample_text)
 
-    except Exception as e:
-        print(f"Error occurred: {str(e)}")
-        return jsonify({'error': f'Failed to process the file: {str(e)}'}), 500
+                video_output_path = os.path.join('output', video_filename)
+                render_subtitles_on_video(temp_file.name, translated_segments, video_output_path, font_path)
 
-@app.route('/download/<filename>')
-def download_file(filename):
-    return send_from_directory('output', filename, as_attachment=True)
+                st.success("Subtitle generation complete!")
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+                with open(srt_path, "rb") as file:
+                    st.download_button("Download Subtitle (.srt)", file, srt_filename)
+
+                with open(video_output_path, "rb") as file:
+                    st.download_button("Download Subtitled Video", file, video_filename)
+        else:
+            st.error("Please upload a file first.")
+
+def main():
+    if not st.session_state.authenticated:
+        if st.session_state.page == 'login':
+            login()
+        elif st.session_state.page == 'signup':
+            signup()
+    else:
+        main_page()
+
+if __name__ == "__main__":
+    main()
