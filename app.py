@@ -13,6 +13,10 @@ uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov
 # Language selector
 target_lang = st.selectbox("Select Subtitle Output Language", list(LANG_DICT.keys()))
 
+# Initialize session state
+if 'result' not in st.session_state:
+    st.session_state.result = None
+
 if uploaded_file and st.button("Generate Subtitles"):
     # Save the uploaded file to disk
     temp_video_path = os.path.join("uploads", uploaded_file.name)
@@ -28,21 +32,21 @@ if uploaded_file and st.button("Generate Subtitles"):
         progress_bar.progress(val)
 
     try:
-        result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
-
-        if result:
-            st.success(f"✅ Subtitled video generated successfully!\nDetected Language: {result['detected_language']}")
-
-            with open(result["output_video"], "rb") as f:
-                st.download_button("⬇️ Download Video with Subtitles", f, file_name=os.path.basename(result["output_video"]))
-
-            with open(result["subtitle_file"], "rb") as f:
-                st.download_button("⬇️ Download Subtitle File (.srt)", f, file_name=os.path.basename(result["subtitle_file"]))
-
-            with open(result["summary_file"], "rb") as f:
-                st.download_button("⬇️ Download Full Transcript", f, file_name=os.path.basename(result["summary_file"]))
+        st.session_state.result = process_video(temp_video_path, LANG_DICT[target_lang], progress_callback=update_progress)
+        if st.session_state.result:
+            st.success(f"✅ Subtitled video generated successfully!\nDetected Language: {st.session_state.result['detected_language']}")
         else:
-            st.error("❌ Processing failed. Please check the logs.")
-
+            st.error("Processing failed. Please check the logs.")
     except Exception as e:
-        st.error(f"❌ An unexpected error occurred: {e}")
+        st.error(f"❌ An error occurred: {e}")
+
+# Show download buttons if processing is complete
+if st.session_state.result:
+    with open(st.session_state.result["output_video"], "rb") as f:
+        st.download_button("⬇️ Download Video with Subtitles", f, file_name=os.path.basename(st.session_state.result["output_video"]))
+
+    with open(st.session_state.result["subtitle_file"], "rb") as f:
+        st.download_button("⬇️ Download Subtitle File (.srt)", f, file_name=os.path.basename(st.session_state.result["subtitle_file"]))
+
+    with open(st.session_state.result["summary_file"], "rb") as f:
+        st.download_button("⬇️ Download Full Transcript", f, file_name=os.path.basename(st.session_state.result["summary_file"]))
