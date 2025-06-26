@@ -1,7 +1,10 @@
 # Use Python 3.10 base image
+
 FROM python:3.10-slim
 
 # Set working directory
+ENV STREAMLIT_CONFIG_DIR=/tmp/.streamlit
+
 WORKDIR /app
 
 # Install system dependencies
