@@ -2,7 +2,7 @@ import os
 import tempfile
 import subprocess
 import threading
-import tkinter as tk
+
 from tkinter import filedialog, messagebox
 from tkinter import ttk
 import whisper
